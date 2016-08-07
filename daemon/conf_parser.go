@@ -52,22 +52,32 @@ Env: %v
 //ReadConfiguration reads a configuration stored in a reader and returns a slice of TaskSettings
 //Or an error if the file could not be found or badly formatted
 func ReadConfiguration(reader io.Reader) (settings []TaskSettings, err error) {
-	var conf []TaskSettings
-	var fileData []byte
+	dec := json.NewDecoder(reader)
 
-	buf := make([]byte, BUF_SIZE)
+	_, err = dec.Token()
+	if err != nil {
+		return nil, err
+	}
+	//if t.String() != "[" {
+	//	return nil, fmt.Errorf("Error while parsing configuration: Unexpected token at line 1 column 1: %v\n", t)
+	//}
 
-	for {
-		n, err := reader.Read(buf)
-		if err != nil && err != io.EOF {
+	for dec.More() {
+		defaultConfEntry := TaskSettings{
+			Numprocs:    1,
+			Autostart:   true,
+			Autorestart: "NEVER",
+			Stopsignal:  "TSTP",
+			Stdout:      "/dev/null",
+			Stderr:      "/dev/null",
+		}
+
+		err := dec.Decode(&defaultConfEntry)
+		if err != nil {
 			return nil, err
 		}
-
-		if n == 0 {
-			break
-		}
-		fileData = append(fileData, buf[:n]...)
+		settings = append(settings, defaultConfEntry)
 	}
-	err = json.Unmarshal(fileData, &conf)
-	return conf, err
+
+	return settings, err
 }

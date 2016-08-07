@@ -34,12 +34,15 @@ const TEST_CONF_FILE string = `[
 
 var TEST_PARSED_FILE = []TaskSettings{
 	TaskSettings{
-		Name:       "test",
-		Cmd:        "ls -lR /",
-		Numprocs:   1,
-		Workingdir: "/tmp",
-		Stdout:     "/tmp/test_foo",
-		Stderr:     "/tmp/test_bar",
+		Name:        "test",
+		Cmd:         "ls -lR /",
+		Numprocs:    1,
+		Autostart:   true,
+		Autorestart: "NEVER",
+		Stopsignal:  "TSTP",
+		Workingdir:  "/tmp",
+		Stdout:      "/tmp/test_foo",
+		Stderr:      "/tmp/test_bar",
 	},
 	TaskSettings{
 		Name:         "foo",
