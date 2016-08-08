@@ -1,0 +1,25 @@
+[
+{
+	"name": "test",
+		"cmd": "sleep 10",
+		"numprocs": 1,
+		"workingdir": "/tmp",
+		"stdout": "/tmp/test_foo",
+		"stderr": "/tmp/test_bar"
+},
+{
+	"name": "foo",
+	"cmd": "sleep 3600",
+	"numprocs": 1,
+	"autostart": true,
+	"autorestart": "never",
+	"exitcodes": [0, 2],
+	"startretries": 3,
+	"starttime": 5,
+	"stopsignal": "KILL",
+	"stoptime": 10,
+	"stdout": "/tmp/foo",
+	"stderr": "/tmp/bar",
+	"env" : ["mykey=myvalue"]
+}
+]

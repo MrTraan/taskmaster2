@@ -58,10 +58,6 @@ func ReadConfiguration(reader io.Reader) (settings []TaskSettings, err error) {
 	if err != nil {
 		return nil, err
 	}
-	//if t.String() != "[" {
-	//	return nil, fmt.Errorf("Error while parsing configuration: Unexpected token at line 1 column 1: %v\n", t)
-	//}
-
 	for dec.More() {
 		defaultConfEntry := TaskSettings{
 			Numprocs:    1,
