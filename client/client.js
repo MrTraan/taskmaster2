@@ -56,7 +56,14 @@ rl.on('line', (line) => {
 			rl.prompt()
 		})
 		.catch((err) => {
-			console.log('Error: ' + err)
+			if (err.code == 'ECONNREFUSED') {
+				console.log('Couldnt contact the server')
+				console.log('Make sure the daemon is running')
+			} else if (err.code == 'ECONNRESET') {
+				console.log('Server is now stopped')
+			} else {
+				console.log(err)
+			}
 			rl.prompt()
 		})
 	}
@@ -69,10 +76,10 @@ rl.on('close', () => {
 
 function helpCmd() {
 	console.log('List of commands:')
-	console.log('status	[proc]	-> get the process informations')
-	console.log('start [proc]	-> start a processus')
-	console.log('stop [proc]	-> stop a processus')
-	console.log('restop [proc]	-> stop a processus')
+	console.log('status			-> get tasks informations')
+	console.log('start [task]		-> start a task')
+	console.log('stop [task]		-> stop a task')
+	console.log('restart [task]		-> restart a task')
 	console.log('exit			-> exit the client')
 	console.log('shutdown		-> stop the server')
 }
