@@ -63,7 +63,7 @@ func ReadConfiguration(reader io.Reader) (settings []TaskSettings, err error) {
 			Numprocs:    1,
 			Autostart:   false,
 			Autorestart: "NEVER",
-			Stopsignal:  "TSTP",
+			Stopsignal:  "KILL",
 			Stdout:      "/dev/null",
 			Stderr:      "/dev/null",
 		}

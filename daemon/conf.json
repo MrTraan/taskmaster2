@@ -1,15 +1,7 @@
 [
 {
-	"name": "test",
-		"cmd": "/bin/sleep 10",
-		"numprocs": 1,
-		"workingdir": "/tmp",
-		"stdout": "/tmp/test_foo",
-		"stderr": "/tmp/test_bar"
-},
-{
-	"name": "foo",
-	"cmd": "/bin/sleep 5",
+	"name": "ping",
+	"cmd": "/usr/bin/env ping www.google.com",
 	"numprocs": 1,
 	"autostart": true,
 	"autorestart": "never",

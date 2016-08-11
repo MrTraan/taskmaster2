@@ -14,6 +14,7 @@ const (
 	STATUS_STOPPED  = "STOPPED"
 	STATUS_RUNNING  = "RUNNING"
 	STATUS_STARTING = "STARTING"
+	STOP_TIMEOUT    = 10000 * time.Millisecond
 )
 
 var (
@@ -81,7 +82,7 @@ func NewTask(settings TaskSettings, logChannel chan string) (task *Task, err err
 	task.Attributes = &os.ProcAttr{
 		Dir:   "",
 		Env:   nil,
-		Files: nil,
+		Files: []*os.File{nil, os.Stdout, os.Stderr},
 	}
 	err = nil
 	task.Status = STATUS_STOPPED
@@ -98,7 +99,7 @@ func (t *Task) Start() error {
 
 	t.Status = STATUS_STARTING
 	args := strings.Split(t.Cmd, " ")
-	t.Process, err = os.StartProcess(args[0], args[1:], t.Attributes)
+	t.Process, err = os.StartProcess(args[0], args, t.Attributes)
 	if err != nil {
 		t.Status = STATUS_STOPPED
 		return err
@@ -115,12 +116,14 @@ func (t *Task) Start() error {
 			return
 		}
 		t.Status = STATUS_STOPPED
-		t.Log <- fmt.Sprintf("Task %s ended graciously", t.Name)
+		t.Log <- fmt.Sprintf("Task %s ended graciously: %s", t.Name, t.ExitState)
 	}()
 	return nil
 }
 
 func (t *Task) Stop() error {
+	stopChan := make(chan string)
+
 	if t.Status != STATUS_RUNNING {
 		return ERR_TASK_ALREADY_STOPPED
 	}
@@ -128,8 +131,37 @@ func (t *Task) Stop() error {
 	if signalMap[t.Stopsignal] == syscall.Signal(0) {
 		return errors.New("Unknown stop signal " + t.Stopsignal)
 	}
+
+	go func() {
+		timeoutChan := time.After(STOP_TIMEOUT)
+		for {
+			select {
+			case <-timeoutChan:
+				stopChan <- "Error while stopping task: timeout"
+				return
+			default:
+				if t.Status == STATUS_STOPPED {
+					stopChan <- "SUCCESS"
+					return
+				} else {
+					time.Sleep(100 * time.Millisecond)
+				}
+			}
+		}
+	}()
+
 	t.Process.Signal(signalMap[t.Stopsignal])
-	return nil
+
+	msg := <-stopChan
+	if msg == "SUCCESS" {
+		return nil
+	} else {
+		return errors.New(msg)
+	}
+}
+
+func (t *Task) Kill() error {
+	return t.Process.Kill()
 }
 
 func TaskPs(tasks []*Task) string {
