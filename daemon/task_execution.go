@@ -4,95 +4,132 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os/exec"
+	"os"
 	"strings"
+	"syscall"
 	"time"
 )
 
 const (
-	STATUS_STOPPED = iota
-	STATUS_RUNNING
-	STATUS_STARTING
+	STATUS_STOPPED  = "STOPPED"
+	STATUS_RUNNING  = "RUNNING"
+	STATUS_STARTING = "STARTING"
 )
 
 var (
 	ERR_TASK_ALREADY_RUNNING = errors.New("Task is already running")
+	ERR_TASK_ALREADY_STOPPED = errors.New("Task is already stopped")
 )
+
+var signalMap = map[string]syscall.Signal{
+	"ABRT":   syscall.Signal(0x6),
+	"ALRM":   syscall.Signal(0xe),
+	"BUS":    syscall.Signal(0x7),
+	"CHLD":   syscall.Signal(0x11),
+	"CLD":    syscall.Signal(0x11),
+	"CONT":   syscall.Signal(0x12),
+	"FPE":    syscall.Signal(0x8),
+	"HUP":    syscall.Signal(0x1),
+	"ILL":    syscall.Signal(0x4),
+	"INT":    syscall.Signal(0x2),
+	"IO":     syscall.Signal(0x1d),
+	"IOT":    syscall.Signal(0x6),
+	"KILL":   syscall.Signal(0x9),
+	"PIPE":   syscall.Signal(0xd),
+	"POLL":   syscall.Signal(0x1d),
+	"PROF":   syscall.Signal(0x1b),
+	"PWR":    syscall.Signal(0x1e),
+	"QUIT":   syscall.Signal(0x3),
+	"SEGV":   syscall.Signal(0xb),
+	"STKFLT": syscall.Signal(0x10),
+	"STOP":   syscall.Signal(0x13),
+	"SYS":    syscall.Signal(0x1f),
+	"TERM":   syscall.Signal(0xf),
+	"TRAP":   syscall.Signal(0x5),
+	"TSTP":   syscall.Signal(0x14),
+	"TTIN":   syscall.Signal(0x15),
+	"TTOU":   syscall.Signal(0x16),
+	"UNUSED": syscall.Signal(0x1f),
+	"URG":    syscall.Signal(0x17),
+	"USR1":   syscall.Signal(0xa),
+	"USR2":   syscall.Signal(0xc),
+	"VTALRM": syscall.Signal(0x1a),
+	"WINCH":  syscall.Signal(0x1c),
+	"XCPU":   syscall.Signal(0x18),
+	"XFSZ":   syscall.Signal(0x19),
+}
 
 type Task struct {
 	TaskSettings
-	Command *exec.Cmd
-	Pid     int
-	Stdout  io.ReadCloser
-	Stderr  io.ReadCloser
-	Status  int
-	Uptime  time.Time
-	Log     chan string
+	Process    *os.Process
+	Attributes *os.ProcAttr
+	ExitState  *os.ProcessState
+	Stdout     io.ReadCloser
+	Stderr     io.ReadCloser
+	Status     string
+	Uptime     time.Time
+	Log        chan string
 }
 
-//Status formats task status and returns it as a string
-func (t *Task) GetStatus() string {
-	switch t.Status {
-	case STATUS_STOPPED:
-		return "Stopped"
-	case STATUS_RUNNING:
-		return "Running"
-	case STATUS_STARTING:
-		return "Starting"
-	default:
-		return "Unkown status"
-	}
-}
+//NewTask create a new task instance according to settings given in parameter
+//Logs will be output to logChannel
+func NewTask(settings TaskSettings, logChannel chan string) (task *Task, err error) {
+	task = new(Task)
+	task.TaskSettings = settings
 
-//String formats a task status and returns it as a string
-//Useful to log task to user
-func (t *Task) String() string {
-	if t.Status == STATUS_RUNNING {
-		return fmt.Sprintf("%-20s%-20s%-20d%-20v\n",
-			t.Name, t.GetStatus(), t.Pid, time.Since(t.Uptime))
-	} else {
-		return fmt.Sprintf("%-20s%-20s%-20d%-20v\n",
-			t.Name, t.GetStatus(), t.Pid, 0)
+	task.Log = logChannel
+	task.Attributes = &os.ProcAttr{
+		Dir:   "",
+		Env:   nil,
+		Files: nil,
 	}
+	err = nil
+	task.Status = STATUS_STOPPED
+	return task, err
 }
 
 //Start launch a task
 //It returns an error if the task is already running or if an error occured while starting the task
 func (t *Task) Start() error {
+	var err error
 	if t.Status != STATUS_STOPPED {
 		return ERR_TASK_ALREADY_RUNNING
 	}
 
 	t.Status = STATUS_STARTING
-	if err := t.Command.Start(); err != nil {
+	args := strings.Split(t.Cmd, " ")
+	t.Process, err = os.StartProcess(args[0], args[1:], t.Attributes)
+	if err != nil {
 		t.Status = STATUS_STOPPED
 		return err
 	}
 
-	t.Status = STATUS_RUNNING
-	t.Uptime = time.Now()
-
 	go func() {
-		if err := t.Command.Wait(); err != nil {
-			t.Log <- "Error"
+		t.Status = STATUS_RUNNING
+		t.Uptime = time.Now()
+		t.Log <- fmt.Sprintf("Task %s started", t.Name)
+		t.ExitState, err = t.Process.Wait()
+		if err != nil {
 			t.Status = STATUS_STOPPED
+			t.Log <- fmt.Sprintf("Task %s ended with error: %v", t.Name, err)
 			return
 		}
-		t.Log <- "Done"
 		t.Status = STATUS_STOPPED
+		t.Log <- fmt.Sprintf("Task %s ended graciously", t.Name)
 	}()
 	return nil
 }
 
-func NewTask(settings TaskSettings) (task *Task, err error) {
-	task = new(Task)
-	task.TaskSettings = settings
+func (t *Task) Stop() error {
+	if t.Status != STATUS_RUNNING {
+		return ERR_TASK_ALREADY_STOPPED
+	}
 
-	task.Log = make(chan string)
-	args := strings.Split(task.Cmd, " ")
-	task.Command = exec.Command(args[0], args[1:]...)
-	err = nil
-	return task, err
+	if signalMap[t.Stopsignal] == syscall.Signal(0) {
+		return errors.New("Unknown stop signal " + t.Stopsignal)
+	}
+	t.Process.Signal(signalMap[t.Stopsignal])
+	return nil
 }
 
 func TaskPs(tasks []*Task) string {
@@ -102,4 +139,16 @@ func TaskPs(tasks []*Task) string {
 		str += fmt.Sprint(t)
 	}
 	return str
+}
+
+//String formats a task status and returns it as a string
+//Useful to log task to user
+func (t *Task) String() string {
+	if t.Status == STATUS_RUNNING {
+		return fmt.Sprintf("%-20s%-20s%-20d%-20v\n",
+			t.Name, t.Status, t.Process.Pid, time.Since(t.Uptime))
+	} else {
+		return fmt.Sprintf("%-20s%-20s%-20d%-20v\n",
+			t.Name, t.Status, 0, 0)
+	}
 }

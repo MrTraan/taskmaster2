@@ -61,7 +61,7 @@ func ReadConfiguration(reader io.Reader) (settings []TaskSettings, err error) {
 	for dec.More() {
 		defaultConfEntry := TaskSettings{
 			Numprocs:    1,
-			Autostart:   true,
+			Autostart:   false,
 			Autorestart: "NEVER",
 			Stopsignal:  "TSTP",
 			Stdout:      "/dev/null",

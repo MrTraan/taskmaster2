@@ -1,7 +1,7 @@
 [
 {
 	"name": "test",
-		"cmd": "sleep 10",
+		"cmd": "/bin/sleep 10",
 		"numprocs": 1,
 		"workingdir": "/tmp",
 		"stdout": "/tmp/test_foo",
@@ -9,7 +9,7 @@
 },
 {
 	"name": "foo",
-	"cmd": "sleep 3600",
+	"cmd": "/bin/sleep 5",
 	"numprocs": 1,
 	"autostart": true,
 	"autorestart": "never",
