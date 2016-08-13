@@ -79,14 +79,22 @@ func NewTask(settings TaskSettings, logChannel chan string) (task *Task, err err
 	task.TaskSettings = settings
 
 	task.Log = logChannel
-	task.Attributes = &os.ProcAttr{
-		Dir:   "",
-		Env:   nil,
-		Files: []*os.File{nil, os.Stdout, os.Stderr},
+	stdFiles, err := openTaskStdout(task)
+	if err != nil {
+		return nil, err
 	}
-	err = nil
+
+	task.Attributes = &os.ProcAttr{
+		Dir:   settings.Workingdir,
+		Env:   settings.Env,
+		Files: stdFiles,
+	}
 	task.Status = STATUS_STOPPED
-	return task, err
+	return task, nil
+}
+
+func openTaskStdout(task *Task) ([]*os.Files, error) {
+	return []*os.Files{nil, os.Stdout, os.Stderr}, nil
 }
 
 //Start launch a task

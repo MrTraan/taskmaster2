@@ -66,6 +66,7 @@ func ReadConfiguration(reader io.Reader) (settings []TaskSettings, err error) {
 			Stopsignal:  "KILL",
 			Stdout:      "/dev/null",
 			Stderr:      "/dev/null",
+			Env:         nil,
 		}
 
 		err := dec.Decode(&defaultConfEntry)
