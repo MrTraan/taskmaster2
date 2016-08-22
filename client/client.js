@@ -1,3 +1,4 @@
+#!/usr/local/bin/node
 'use strict'
 
 const readline 		= require('readline')
@@ -34,6 +35,9 @@ rl.on('line', (line) => {
 			break
 		case 'stop':
 			request = 'stopOne'
+			break
+		case 'kill':
+			request = 'killOne'
 			break
 		case 'shutdown':
 			request = 'shutdown'

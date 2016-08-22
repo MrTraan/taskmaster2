@@ -35,6 +35,11 @@ var Routes = []Route{
 		Handler: stopHandler,
 	},
 	Route{
+		Name:    "Kill",
+		Path:    "/kill/",
+		Handler: killHandler,
+	},
+	Route{
 		Name:    "Restart",
 		Path:    "/restart/",
 		Handler: restartHandler,
@@ -84,10 +89,26 @@ func stopHandler(w http.ResponseWriter, r *http.Request) {
 			if err := t.Stop(); err != nil {
 				fmt.Fprintf(w, "Error while stopping task %s: %v\n", target, err)
 			} else {
-				fmt.Fprintf(w, "Stoped task %s\n", target)
+				fmt.Fprintf(w, "Stopped task %s\n", target)
 			}
+			return
 		}
-		return
+	}
+	fmt.Fprintf(w, "Error: unknown task %s\n", target)
+}
+
+func killHandler(w http.ResponseWriter, r *http.Request) {
+	target := r.URL.Path[len("/kill/"):]
+	log.Printf("Received a kill request on: %s\n", target)
+	for _, t := range taskHolder {
+		if t.Name == target {
+			if err := t.Kill(); err != nil {
+				fmt.Fprintf(w, "Error while killing task %s: %v\n", target, err)
+			} else {
+				fmt.Fprintf(w, "Killed task %s\n", target)
+			}
+			return
+		}
 	}
 	fmt.Fprintf(w, "Error: unknown task %s\n", target)
 }

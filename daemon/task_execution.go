@@ -3,7 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
-	"io"
+	"log"
 	"os"
 	"strings"
 	"syscall"
@@ -65,8 +65,6 @@ type Task struct {
 	Process    *os.Process
 	Attributes *os.ProcAttr
 	ExitState  *os.ProcessState
-	Stdout     io.ReadCloser
-	Stderr     io.ReadCloser
 	Status     string
 	Uptime     time.Time
 	Log        chan string
@@ -93,8 +91,17 @@ func NewTask(settings TaskSettings, logChannel chan string) (task *Task, err err
 	return task, nil
 }
 
-func openTaskStdout(task *Task) ([]*os.Files, error) {
-	return []*os.Files{nil, os.Stdout, os.Stderr}, nil
+func openTaskStdout(t *Task) ([]*os.File, error) {
+	stdoutFile, err := os.OpenFile(t.Stdout, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
+	if err != nil {
+		return nil, err
+	}
+
+	stderrFile, err := os.OpenFile(t.Stderr, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
+	if err != nil {
+		return nil, err
+	}
+	return []*os.File{nil, stdoutFile, stderrFile}, nil
 }
 
 //Start launch a task
@@ -112,11 +119,19 @@ func (t *Task) Start() error {
 		t.Status = STATUS_STOPPED
 		return err
 	}
+	log.Printf("Task %s starting...\n", t.Name)
+	t.Uptime = time.Now()
 
 	go func() {
-		t.Status = STATUS_RUNNING
-		t.Uptime = time.Now()
-		t.Log <- fmt.Sprintf("Task %s started", t.Name)
+		time.Sleep(time.Duration(t.Starttime) * time.Millisecond)
+		if t.Status == STATUS_STARTING {
+			t.Status = STATUS_RUNNING
+			t.Uptime = time.Now()
+			log.Printf("Task %s is now running\n", t.Name)
+		}
+	}()
+
+	go func() {
 		t.ExitState, err = t.Process.Wait()
 		if err != nil {
 			t.Status = STATUS_STOPPED
@@ -132,7 +147,7 @@ func (t *Task) Start() error {
 func (t *Task) Stop() error {
 	stopChan := make(chan string)
 
-	if t.Status != STATUS_RUNNING {
+	if t.Status == STATUS_STOPPED {
 		return ERR_TASK_ALREADY_STOPPED
 	}
 
@@ -184,7 +199,7 @@ func TaskPs(tasks []*Task) string {
 //String formats a task status and returns it as a string
 //Useful to log task to user
 func (t *Task) String() string {
-	if t.Status == STATUS_RUNNING {
+	if t.Status != STATUS_STOPPED {
 		return fmt.Sprintf("%-20s%-20s%-20d%-20v\n",
 			t.Name, t.Status, t.Process.Pid, time.Since(t.Uptime))
 	} else {

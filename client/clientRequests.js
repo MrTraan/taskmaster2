@@ -43,6 +43,15 @@ module.exports = class Requester {
 			method: 'GET'
 		})
 	}
+	
+	killOne(taskName) {
+		return requestPromise({
+			hostname: this._hostname,
+			port: this._port,
+			path: '/kill/' + taskName,
+			method: 'GET'
+		})
+	}
 
 	restartOne(taskName) {
 		return requestPromise({

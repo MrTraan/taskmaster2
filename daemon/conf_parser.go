@@ -59,7 +59,7 @@ func ReadConfiguration(reader io.Reader) (settings []TaskSettings, err error) {
 		return nil, err
 	}
 	for dec.More() {
-		defaultConfEntry := TaskSettings{
+		newEntry := TaskSettings{
 			Numprocs:    1,
 			Autostart:   false,
 			Autorestart: "NEVER",
@@ -69,11 +69,19 @@ func ReadConfiguration(reader io.Reader) (settings []TaskSettings, err error) {
 			Env:         nil,
 		}
 
-		err := dec.Decode(&defaultConfEntry)
+		err := dec.Decode(&newEntry)
 		if err != nil {
 			return nil, err
 		}
-		settings = append(settings, defaultConfEntry)
+		if newEntry.Numprocs > 1 {
+			for i := 1; i <= newEntry.Numprocs; i++ {
+				tmp := newEntry
+				tmp.Name = tmp.Name + fmt.Sprintf(":%d", i)
+				settings = append(settings, tmp)
+			}
+		} else {
+			settings = append(settings, newEntry)
+		}
 	}
 
 	return settings, err

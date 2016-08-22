@@ -2,16 +2,33 @@
 {
 	"name": "ping",
 	"cmd": "/usr/bin/env ping www.google.com",
-	"numprocs": 1,
+	"numprocs": 3,
 	"autostart": true,
 	"autorestart": "never",
 	"exitcodes": [0, 2],
 	"startretries": 3,
-	"starttime": 5,
+	"starttime": 5000,
 	"stopsignal": "KILL",
 	"stoptime": 10,
-	"stdout": "/tmp/foo",
-	"stderr": "/tmp/bar",
+	"stdout": "/taskout/foo",
+	"stderr": "/taskout/bar",
 	"env" : ["mykey=myvalue"]
+},
+{
+	"name": "testenv",
+	"cmd": "/bin/bash /tmp/test_env.sh",
+	"stdout": "/taskout/poney",
+	"env" : ["LOOK_AT=Look at my horse", "IT_IS=my horse is amazing"]
+},
+{
+	"name": "lotsoflogs",
+	"cmd": "/bin/ls -lR /",
+	"stdout": "/taskout/bigtime"
+},
+{
+	"name": "testworkingdir",
+	"cmd": "/bin/pwd",
+	"workingdir": "/",
+	"stdout": "/taskout/pwd"
 }
 ]
