@@ -1,34 +1,34 @@
 [
 {
 	"name": "ping",
-	"cmd": "/usr/bin/env ping www.google.com",
+	"cmd": "/sbin/ping www.google.com",
 	"numprocs": 3,
 	"autostart": true,
 	"autorestart": "never",
 	"exitcodes": [0, 2],
-	"startretries": 3,
-	"starttime": 5000,
+	"startretries": 4,
+	"starttime": 1000,
 	"stopsignal": "KILL",
 	"stoptime": 10,
-	"stdout": "/taskout/foo",
-	"stderr": "/taskout/bar",
-	"env" : ["mykey=myvalue"]
+	"stdout": "/tmp/taskout/foo",
+	"stderr": "/tmp/taskout/bar",
+	"env" : ["mykey=myvalu"]
 },
 {
 	"name": "testenv",
 	"cmd": "/bin/bash /tmp/test_env.sh",
-	"stdout": "/taskout/poney",
+	"stdout": "/tmp/taskout/poney",
 	"env" : ["LOOK_AT=Look at my horse", "IT_IS=my horse is amazing"]
 },
 {
 	"name": "lotsoflogs",
 	"cmd": "/bin/ls -lR /",
-	"stdout": "/taskout/bigtime"
+	"stdout": "/tmp/taskout/bigtime"
 },
 {
 	"name": "testworkingdir",
 	"cmd": "/bin/pwd",
 	"workingdir": "/",
-	"stdout": "/taskout/pwd"
+	"stdout": "/tmp/taskout/pwd"
 }
 ]

@@ -18,6 +18,9 @@ module.exports = class Requester {
 	}
 
 	statusOne(taskName) {
+		if (!taskName) {
+			return Promise.reject('Error: a task name is required');
+		}
 		return requestPromise({
 			hostname: this._hostname,
 			port: this._port,
@@ -27,6 +30,9 @@ module.exports = class Requester {
 	}
 
 	startOne(taskName) {
+		if (!taskName) {
+			return Promise.reject('Error: a task name is required');
+		}
 		return requestPromise({
 			hostname: this._hostname,
 			port: this._port,
@@ -36,6 +42,9 @@ module.exports = class Requester {
 	}
 
 	stopOne(taskName) {
+		if (!taskName) {
+			return Promise.reject('Error: a task name is required');
+		}
 		return requestPromise({
 			hostname: this._hostname,
 			port: this._port,
@@ -45,6 +54,9 @@ module.exports = class Requester {
 	}
 	
 	killOne(taskName) {
+		if (!taskName) {
+			return Promise.reject('Error: a task name is required');
+		}
 		return requestPromise({
 			hostname: this._hostname,
 			port: this._port,
@@ -54,6 +66,9 @@ module.exports = class Requester {
 	}
 
 	restartOne(taskName) {
+		if (!taskName) {
+			return Promise.reject('Error: a task name is required');
+		}
 		return requestPromise({
 			hostname: this._hostname,
 			port: this._port,
@@ -67,6 +82,15 @@ module.exports = class Requester {
 			hostname: this._hostname,
 			port: this._port,
 			path: '/shutdown',
+			method: 'GET'
+		})
+	}
+	
+	reload() {
+		return requestPromise({
+			hostname: this._hostname,
+			port: this._port,
+			path: '/reload',
 			method: 'GET'
 		})
 	}

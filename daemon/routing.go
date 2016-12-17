@@ -20,6 +20,11 @@ var Routes = []Route{
 		Handler: mainHandler,
 	},
 	Route{
+		Name:    "StatusOne",
+		Path:    "/status/",
+		Handler: statusOneHandler,
+	},
+	Route{
 		Name:    "Status",
 		Path:    "/status",
 		Handler: statusHandler,
@@ -49,6 +54,11 @@ var Routes = []Route{
 		Path:    "/shutdown",
 		Handler: shutdownHandler,
 	},
+	Route{
+		Name:    "Reload",
+		Path:    "/reload",
+		Handler: reloadConfHandler,
+	},
 }
 
 func HandleRoutes() {
@@ -58,7 +68,21 @@ func HandleRoutes() {
 }
 
 func mainHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("I should list commands here\n"))
+	w.Write([]byte("Error: unsupported command\n"))
+}
+
+func statusOneHandler(w http.ResponseWriter, r *http.Request) {
+	target := r.URL.Path[len("/status/"):]
+	log.Printf("Received a status request on: %s\n", target)
+	for _, t := range taskHolder {
+		if t.Name == target {
+			fmt.Fprintf(w, "%-20s%-20s%-20s%-20s\n", "NAME", "STATUS", "PID", "UPTIME")
+			fmt.Fprintf(w, "%s\n", t)
+			return
+		}
+	}
+	fmt.Fprintf(w, "Error: unknown task %s\n", target)
+
 }
 
 func statusHandler(w http.ResponseWriter, r *http.Request) {
@@ -135,10 +159,21 @@ func restartHandler(w http.ResponseWriter, r *http.Request) {
 
 func shutdownHandler(w http.ResponseWriter, r *http.Request) {
 	for _, t := range taskHolder {
-		if err := t.Kill(); err != nil {
-			log.Printf("Error while shutting down task %s\n", t.Name)
+		if t.Status != STATUS_STOPPED {
+			if err := t.Kill(); err != nil {
+				log.Printf("Error while shutting down task %s\n", t.Name)
+			}
 		}
 	}
 	fmt.Fprintf(w, "Daemon is shutting down\n")
 	defer os.Exit(0)
+}
+
+func reloadConfHandler(w http.ResponseWriter, r *http.Request) {
+	err := reloadConf()
+	if err != nil {
+		fmt.Fprintf(w, "%s\n", err)
+	} else {
+		fmt.Fprintf(w, "Configuration file reloaded\n")
+	}
 }

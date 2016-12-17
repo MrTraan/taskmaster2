@@ -114,7 +114,9 @@ func (t *Task) Start() error {
 
 	t.Status = STATUS_STARTING
 	args := strings.Split(t.Cmd, " ")
+	oldUmask := syscall.Umask(t.Umask)
 	t.Process, err = os.StartProcess(args[0], args, t.Attributes)
+	syscall.Umask(oldUmask)
 	if err != nil {
 		t.Status = STATUS_STOPPED
 		return err
@@ -184,6 +186,9 @@ func (t *Task) Stop() error {
 }
 
 func (t *Task) Kill() error {
+	if t.Status == STATUS_STOPPED {
+		return ERR_TASK_ALREADY_STOPPED
+	}
 	return t.Process.Kill()
 }
 

@@ -73,16 +73,28 @@ func ReadConfiguration(reader io.Reader) (settings []TaskSettings, err error) {
 		if err != nil {
 			return nil, err
 		}
-		if newEntry.Numprocs > 1 {
-			for i := 1; i <= newEntry.Numprocs; i++ {
-				tmp := newEntry
-				tmp.Name = tmp.Name + fmt.Sprintf(":%d", i)
-				settings = append(settings, tmp)
-			}
-		} else {
-			settings = append(settings, newEntry)
+		settings = append(settings, newEntry)
+		for i := 2; i <= newEntry.Numprocs; i++ {
+			tmp := newEntry
+			tmp.Name = tmp.Name + fmt.Sprintf(":%d", i)
+			settings = append(settings, tmp)
 		}
 	}
 
 	return settings, err
+}
+
+func CheckConfiguration(settings []TaskSettings) error {
+	for _, entry := range settings {
+		duplicates := 0
+		for _, e := range settings {
+			if e.Name == entry.Name {
+				duplicates++
+			}
+		}
+		if duplicates > 1 {
+			return fmt.Errorf("Duplicate task name: %s\n", entry.Name)
+		}
+	}
+	return nil
 }
